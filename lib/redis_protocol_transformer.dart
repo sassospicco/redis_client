@@ -1,4 +1,3 @@
-
 /**
  * This is a [StreamTransformer] for redis Socket replies.
  *
@@ -18,12 +17,11 @@
  */
 library redis_protocol_transformer;
 
-import 'dart:math';
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
-
+import 'dart:math';
 
 part 'transformer/redis_replies.dart';
-part 'transformer/transformer_exceptions.dart';
 part 'transformer/transformer.dart';
+part 'transformer/transformer_exceptions.dart';

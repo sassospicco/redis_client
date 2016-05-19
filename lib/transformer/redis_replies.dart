@@ -7,6 +7,8 @@ class RedisReply {
 }
 
 class StatusReply extends RedisReply {
+  static const String OK = "OK";
+
   StatusReply(this.status);
   String toString() => "StatusReply: $status";
   final String status;
@@ -28,8 +30,8 @@ class BulkReply extends RedisReply {
   BulkReply(this.bytes);
 
   String get string {
-    if(_dataAsString == null) {
-      _dataAsString = bytes == null? bytes : UTF8.decode(bytes);
+    if (_dataAsString == null) {
+      _dataAsString = bytes == null ? bytes : UTF8.decode(bytes);
     }
     return _dataAsString;
   }

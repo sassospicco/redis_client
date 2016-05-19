@@ -3,16 +3,11 @@ library redis_protocol_transformer_tests;
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:mockito/mockito.dart';
+import 'package:redis_client/redis_protocol_transformer.dart';
 import 'package:test/test.dart';
 
-import 'package:mockito/mockito.dart';
-
-import 'package:redis_client/redis_protocol_transformer.dart';
-import 'package:redis_client/redis_client.dart';
-
-
 class MockSink extends Mock implements EventSink<RedisReply> {
-
   bool connected = true;
 
   MockSink();
@@ -20,17 +15,14 @@ class MockSink extends Mock implements EventSink<RedisReply> {
   close() {}
   addError(errorEvent, [stackTrace]) {}
 
-  List<RedisReply> replies = <RedisReply>[ ];
+  List<RedisReply> replies = <RedisReply>[];
   void add(RedisReply reply) {
     replies.add(reply);
   }
-
 }
 
 main() {
-
   group("RedisProtocolTransformer:", () {
-
     group("Exceptions", () {
       test("should all be able to be instantiated", () {
         // Had a problem with that at the beginning. Just making sure.
@@ -75,7 +67,6 @@ main() {
         expect(sink.replies[0].runtimeType, equals(StatusReply));
         StatusReply testedStatus = sink.replies[0];
         expect(testedStatus.status, equals("Hi there"));
-
       });
       test("should properly handle it if all data is passed at once", () {
         var sink = new MockSink();
@@ -174,7 +165,6 @@ main() {
         BulkReply reply = sink.replies.first;
         expect(reply.string, equals(null));
         expect(reply.bytes, equals(null));
-
       });
       test("should properly handle multiple chopped data chunks", () {
         var sink = new MockSink();
@@ -278,7 +268,6 @@ main() {
         expect(tested2.error, "Error");
         expect(tested3.status, "Status");
         expect(tested4.string, "foobar");
-
       });
       test("should handle multi bulk replies with 0 bulk replies", () {
         var sink = new MockSink();
@@ -294,7 +283,6 @@ main() {
 
         MultiBulkReply test = sink.replies.first;
         expect(test.replies.length, equals(0));
-
       });
       test("should properly handle consecutive MultiBulkReplys in single packet", () {
         var sink = new MockSink();
@@ -327,9 +315,7 @@ main() {
 
         BulkReply tested1 = sink.replies[0];
         expect(tested1.string, equals("fo¢b€r"));
-
-     });
+      });
     });
   });
-
 }

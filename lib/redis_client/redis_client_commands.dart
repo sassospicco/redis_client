@@ -4,7 +4,6 @@ part of redis_client;
 ///
 /// TODO change to lazy static initializers
 class RedisCommand {
-
   // No need to use runes since all commands are ASCII
   static List<int> _chars(String command) => command.codeUnits;
 
@@ -173,5 +172,4 @@ class RedisCommand {
   static List<int> get SCRIPT => _chars("SCRIPT"); // EXISTS FLUSH KILL LOAD
   static List<int> get KILL => _chars("KILL");
   static List<int> get LOAD => _chars("LOAD");
-
 }

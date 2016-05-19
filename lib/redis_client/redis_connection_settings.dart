@@ -1,10 +1,7 @@
 part of redis_client;
 
-
-
 /// Parses the connection string.
 class RedisConnectionSettings {
-
   final String connectionString;
 
   String hostname = "localhost";
@@ -19,7 +16,7 @@ class RedisConnectionSettings {
   ///
   /// See the [RedisConnection] class documentation on which connectionStrings
   /// are allowed.
-  RedisConnectionSettings([ String this.connectionString ]) {
+  RedisConnectionSettings([String this.connectionString]) {
     if (connectionString == null || connectionString.isEmpty) return;
 
     List<String> parts = connectionString.split("@");
@@ -37,7 +34,4 @@ class RedisConnectionSettings {
       if (parts.length == 2) db = int.parse(parts.last);
     }
   }
-
 }
-
-

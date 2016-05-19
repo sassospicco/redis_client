@@ -1,7 +1,5 @@
 part of redis_client;
 
-
-
 /// The [RedisConnection] wraps the Socket, and provides an API to communicate
 /// to redis.
 ///
@@ -20,12 +18,8 @@ part of redis_client;
 /// - `'host'`
 /// - `null` defaults to `'localhost:6379/0'`
 abstract class RedisConnection {
-
-
   /// Create a new [RedisConnection] with given connectionString.
   static Future<RedisConnection> connect(String connectionString) => _RedisConnection.connect(connectionString);
-
-
 
   /// The connectionString from which the connection settings have been
   /// extruded.
@@ -50,11 +44,9 @@ abstract class RedisConnection {
   /// Closes the connection.
   Future close();
 
-
   Map get stats;
 
-
-  Future select([ int db ]);
+  Future select([int db]);
 
   /// Convenient method to send [String] commands.
   Receiver send(List<String> cmdWithArgs);
@@ -62,29 +54,22 @@ abstract class RedisConnection {
   /// Convenient method to send a command with a list of [String] arguments.
   Receiver sendCommand(List<int> command, List<String> args);
 
-
   /// Convenient method to send a command with a list of [String] arguments
   /// and a list of [String] values.
   Receiver sendCommandWithVariadicValues(List<int> command, List<String> args, List<String> values);
 
-
   /// Sends the commands already in binary.
   Receiver rawSend(List<List<int>> cmdWithArgs);
 
-
   /// Subscribes to [List<String>] channels with [Function] onMessage handler
   Future subscribe(List<String> channels, Function onMessage);
-
 
   /// Unubscribes from [List<String>] channels
   Future unsubscribe(List<String> channels);
 }
 
-
 /// The actual implementation of the [RedisConnection].
 class _RedisConnection extends RedisConnection {
-
-
   // Connection settings
 
   final String connectionString;
@@ -103,19 +88,13 @@ class _RedisConnection extends RedisConnection {
   /// Handlers for stream transformation from stream of int to stream of RedisReply
   RedisStreamTransformerHandler _streamTransformerHandler = new RedisStreamTransformerHandler();
 
-  /// The completer that resolves the future as soon as the RedisConnection
-  /// is connected.
-  final Completer<RedisConnection> _connectedCompleter = new Completer<RedisConnection>();
-
   /// Gets resolved as soon as the connection is up.
   Future<RedisConnection> connected;
-
 
   /// The character sequence that ends data.
   ///
   /// `\r\n`
-  static const List<int> _lineEnd = const [ 13, 10 ];
-
+  static const List<int> _lineEnd = const [13, 10];
 
   /// Used to output debug information
   Logger logger = new Logger("redis_client");
@@ -135,7 +114,6 @@ class _RedisConnection extends RedisConnection {
   /// TODO actually implement.
   Map get stats => throw new UnsupportedError("Not done yet");
 
-
   /**
    * Creates a [RedisConnection], and returns the future for a connection.
    *
@@ -145,46 +123,41 @@ class _RedisConnection extends RedisConnection {
   static Future<RedisConnection> connect(String connectionString) {
     var settings = new RedisConnectionSettings(connectionString);
 
-    var redisConnection = new _RedisConnection(settings.connectionString, settings.hostname, settings.password, settings.port, settings.db);
+    var redisConnection = new _RedisConnection(
+        settings.connectionString, settings.hostname, settings.password, settings.port, settings.db);
 
     return redisConnection.connected.then((_) => redisConnection);
   }
 
-
   /// Create a new [RedisConnection] with given connectionString.
   _RedisConnection(this.connectionString, this.hostname, this.password, this.port, this.db) {
-
     logger.info("Creating socket connection ($hostname, $port)");
 
-    this.connected = Socket.connect(hostname, port)
-        .then((Socket socket) {
-          logger.info("Connected socket");
+    this.connected = Socket.connect(hostname, port).then((Socket socket) {
+      logger.info("Connected socket");
 
-          _socket = socket;
-          //disable Nagle's algorithm
-          socket.setOption(SocketOption.TCP_NODELAY,true);
+      _socket = socket;
+      //disable Nagle's algorithm
+      socket.setOption(SocketOption.TCP_NODELAY, true);
 
-          // Setting up all the listeners so Redis responses can be interpreted.
-          socket
-            .transform(_streamTransformerHandler.createTransformer())
-            .listen(_onRedisReply, onError: _onStreamError, onDone: _onStreamDone);
+      // Setting up all the listeners so Redis responses can be interpreted.
+      socket
+          .transform(_streamTransformerHandler.createTransformer())
+          .listen(_onRedisReply, onError: _onStreamError, onDone: _onStreamDone);
 
-          if (password != null) return _authenticate(password);
-        })
-        .then((_) {
-          if (db > 0) return select();
-        })
+      if (password != null) return _authenticate(password);
+    }).then((_) {
+      if (db > 0) return select();
+    })
         // The RedisConnection has connected successfully.
 
         .catchError(_onSocketError);
-
   }
 
   Future auth(String _password) {
     this.password = _password;
-    return sendCommand(RedisCommand.AUTH, [ _password ]).receive();
+    return sendCommand(RedisCommand.AUTH, [_password]).receive();
   }
-
 
   /// Closes the connection.
   Future close() {
@@ -192,19 +165,16 @@ class _RedisConnection extends RedisConnection {
     return this.connected.then((_) => _socket.close());
   }
 
-
   /// Selects configured database.
   ///
   /// If db is provided the configuration [db] will be set to it.
-  Future select([ int db ]) {
+  Future select([int db]) {
     if (db != null) this.db = db;
-    return send([ "SELECT", db.toString() ]).receive();
+    return send(["SELECT", db.toString()]).receive();
   }
 
   /// Authenticates with configured password.
-  Future _authenticate(String _password) => send([ "AUTH", password ]).receive();
-
-
+  Future _authenticate(String _password) => send(["AUTH", password]).receive();
 
   /// Gets called when the socket has an error.
   void _onSocketError(err) {
@@ -214,28 +184,27 @@ class _RedisConnection extends RedisConnection {
 
   Function _subscriptionHandler = null;
 
-  Future subscribe(List<String> channels, Function onMessage){
-
+  Future subscribe(List<String> channels, Function onMessage) {
     Completer subscribeCompleter = new Completer();
-    List<String> args = new List <String>()
-        ..add("SUBSCRIBE")
-        ..addAll(channels);
+    List<String> args = new List<String>()
+      ..add("SUBSCRIBE")
+      ..addAll(channels);
 
-    send(args).receive().then((val){
+    send(args).receive().then((val) {
       _subscriptionHandler = onMessage;
       subscribeCompleter.complete();
     });
     return subscribeCompleter.future;
   }
 
-  Future unsubscribe(List<String> channels){
+  Future unsubscribe(List<String> channels) {
     Completer unsubscribeCompleter = new Completer();
-    List<String> args = new List <String>()
-        ..add("UNSUBSCRIBE")
-        ..addAll(channels);
+    List<String> args = new List<String>()
+      ..add("UNSUBSCRIBE")
+      ..addAll(channels);
 
     _subscriptionHandler = null;
-    send(args).receive().then((val){
+    send(args).receive().then((val) {
       unsubscribeCompleter.complete();
     });
     return unsubscribeCompleter.future;
@@ -245,9 +214,8 @@ class _RedisConnection extends RedisConnection {
   void _onRedisReply(RedisReply redisReply) {
     logger.fine("Received reply: $redisReply");
 
-    if(_subscriptionHandler != null){
-      Receiver rec = new Receiver()
-      ..reply = redisReply;
+    if (_subscriptionHandler != null) {
+      Receiver rec = new Receiver()..reply = redisReply;
       _subscriptionHandler(rec);
       return;
     }
@@ -277,7 +245,6 @@ class _RedisConnection extends RedisConnection {
     logger.fine("Stream finished.");
   }
 
-
   Queue<Receiver> _pendingResponses = new Queue<Receiver>();
 
   /**
@@ -290,8 +257,8 @@ class _RedisConnection extends RedisConnection {
    * This function converts the [String]s to binary data, and forwards to
    * [rawSend].
    */
-  Receiver send(List<String> cmdWithArgs) => rawSend(cmdWithArgs.map((String line) => UTF8.encode(line)).toList(growable: false));
-
+  Receiver send(List<String> cmdWithArgs) =>
+      rawSend(cmdWithArgs.map((String line) => UTF8.encode(line)).toList(growable: false));
 
   /**
    * Conveniance wrapper for `rawSend`.
@@ -322,18 +289,17 @@ class _RedisConnection extends RedisConnection {
    */
   Receiver rawSend(List<List<int>> cmdWithArgs) {
     var response = new Receiver();
-    
-   
-    if( logger.level <= Level.FINEST){
+
+    if (logger.level <= Level.FINEST) {
       logger.finest("Sending message ${UTF8.decode(cmdWithArgs[0])}");
     }
-    
+
     //we call _socket.add only once and we try to avoid string concat
     List<int> buffer = new List<int>();
     buffer.addAll("*".codeUnits);
     buffer.addAll(cmdWithArgs.length.toString().codeUnits);
-    buffer.addAll(_lineEnd);    
-    for( var line in cmdWithArgs) {
+    buffer.addAll(_lineEnd);
+    for (var line in cmdWithArgs) {
       buffer.addAll("\$".codeUnits);
       buffer.addAll(line.length.toString().codeUnits);
       buffer.addAll(_lineEnd);
@@ -345,9 +311,7 @@ class _RedisConnection extends RedisConnection {
 
     return response;
   }
-
 }
-
 
 /**
  * Class that handles responses from the redis socket, and serves the replies.
@@ -356,7 +320,6 @@ class _RedisConnection extends RedisConnection {
  * a proxy for the actual [RedisReply] object.
  */
 class Receiver {
-
   /// Gets set when received.
   RedisReply _reply;
 
@@ -397,12 +360,12 @@ class Receiver {
         if (reply is ErrorReply) {
           error = " Error: ${reply.error}";
         }
-        throw new RedisClientException("The returned reply was not of type IntegerReply but ${reply.runtimeType}.${error}");
+        throw new RedisClientException(
+            "The returned reply was not of type IntegerReply but ${reply.runtimeType}.${error}");
       }
       return reply.integer;
     });
   }
-
 
   /**
    * Uses [receiveBulkString] and casts it to a double.
@@ -411,20 +374,17 @@ class Receiver {
     return receiveBulkString().then((doubleString) => double.parse(doubleString));
   }
 
-
   /**
    * Checks that the received reply is of type [ErrorReply].
    */
   Future<String> receiveError() {
     return _received.then((reply) {
       if (reply is! ErrorReply) {
-
         throw new RedisClientException("The returned reply was not of type ErrorReply but ${reply.runtimeType}");
       }
       return reply.error;
     });
   }
-
 
   /**
    * Checks that the received reply is of type [IntegerReply] and returns `true`
@@ -434,18 +394,18 @@ class Receiver {
     return receiveInteger().then((int value) => value == 1 ? true : false);
   }
 
-
   /**
    * Checks that the received reply is of type [StatusReply].
    */
-  Future<String> receiveStatus([ String expectedStatus ]) {
+  Future<String> receiveStatus([String expectedStatus]) {
     return _received.then((reply) {
       if (reply is! StatusReply) {
         var error = "";
         if (reply is ErrorReply) {
           error = " Error: ${reply.error}";
         }
-        throw new RedisClientException("The returned reply was not of type StatusReply but ${reply.runtimeType}.${error}");
+        throw new RedisClientException(
+            "The returned reply was not of type StatusReply but ${reply.runtimeType}.${error}");
       }
       if (expectedStatus != null && (expectedStatus != reply.status)) {
         throw new RedisClientException("The returned status was not $expectedStatus but ${reply.status}.");
@@ -465,7 +425,8 @@ class Receiver {
         if (reply is ErrorReply) {
           error = " Error: ${reply.error}";
         }
-        throw new RedisClientException("The returned reply was not of type BulkReply but ${reply.runtimeType}.${error}");
+        throw new RedisClientException(
+            "The returned reply was not of type BulkReply but ${reply.runtimeType}.${error}");
       }
       return reply.bytes;
     });
@@ -481,7 +442,8 @@ class Receiver {
         if (reply is ErrorReply) {
           error = " Error: ${reply.error}";
         }
-        throw new RedisClientException("The returned reply was not of type BulkReply but ${reply.runtimeType}.${error}");
+        throw new RedisClientException(
+            "The returned reply was not of type BulkReply but ${reply.runtimeType}.${error}");
       }
       return reply.string;
     });
@@ -504,7 +466,8 @@ class Receiver {
         if (reply is ErrorReply) {
           error = " Error: ${reply.error}";
         }
-        throw new RedisClientException("The returned reply was not of type MultiBulkReply but ${reply.runtimeType}.${error}");
+        throw new RedisClientException(
+            "The returned reply was not of type MultiBulkReply but ${reply.runtimeType}.${error}");
       }
       return reply;
     });
@@ -526,8 +489,7 @@ class Receiver {
    */
   Future<List<Object>> receiveMultiBulkDeserialized(RedisSerializer serializer) {
     return receiveMultiBulk().then((MultiBulkReply reply) {
-      return reply.replies.map(
-          (BulkReply reply) => serializer.deserialize(reply.bytes)).toList(growable: false);
+      return reply.replies.map((BulkReply reply) => serializer.deserialize(reply.bytes)).toList(growable: false);
     });
   }
 
@@ -537,8 +499,7 @@ class Receiver {
    */
   Future<Set<Object>> receiveMultiBulkSetDeserialized(RedisSerializer serializer) {
     return receiveMultiBulk().then((MultiBulkReply reply) {
-      return reply.replies.map(
-          (BulkReply reply) => serializer.deserialize(reply.bytes)).toSet();
+      return reply.replies.map((BulkReply reply) => serializer.deserialize(reply.bytes)).toSet();
     });
   }
 
@@ -551,7 +512,6 @@ class Receiver {
       return serializer.deserializeToMap(reply.replies);
     });
   }
-
 
   /**
    * Checks that the received reply is either [ErrorReply], [StatusReply] or

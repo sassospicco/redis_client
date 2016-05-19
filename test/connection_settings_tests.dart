@@ -1,19 +1,16 @@
 library connection_settings_tests;
 
 import 'package:test/test.dart';
+
 import '../lib/redis_client.dart';
 
-
-
-
 main() {
-
   group('RedisConnectionSettings', () {
-/// - `'pass@host:port/db'`
-/// - `'pass@host:port'`
-/// - `'pass@host'`
-/// - `'host'`
-/// - `null` defaults to `'localhost:6379/0'`
+    /// - `'pass@host:port/db'`
+    /// - `'pass@host:port'`
+    /// - `'pass@host'`
+    /// - `'host'`
+    /// - `null` defaults to `'localhost:6379/0'`
 
     group('connectionStrings should be properly parsed:', () {
       test("pass@host:port/db", () {
@@ -53,7 +50,11 @@ main() {
       expect(cs.db, equals(0));
     });
     test("empty string, null and no parameter should result in the default settings", () {
-      var settings = [ new RedisConnectionSettings(""), new RedisConnectionSettings(null), new RedisConnectionSettings() ];
+      var settings = [
+        new RedisConnectionSettings(""),
+        new RedisConnectionSettings(null),
+        new RedisConnectionSettings()
+      ];
 
       settings.forEach((cs) {
         expect(cs.password, equals(null));
@@ -63,5 +64,4 @@ main() {
       });
     });
   });
-
 }
