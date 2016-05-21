@@ -535,17 +535,21 @@ class Receiver {
    */
   Future<List<Object>> receiveMultiFlexDeserialized(RedisSerializer serializer) {
     return receiveMultiBulk().then((MultiBulkReply reply) {
-      return reply?.replies?.map((RedisReply reply) {
-        if (reply is StatusReply) {
-          return reply.status;
-        } else if (reply is ErrorReply) {
-          return reply.error;
-        } else if (reply is BulkReply) {
-          return serializer.deserialize(reply.bytes);
-        } else {
-          throw new RedisClientException("The returned reply was not of type BulkReply but ${reply.runtimeType}");
-        }
-      })?.toList(growable: false);
+      if (reply == null) {
+        throw new RedisAbortedTransaction();
+      } else {
+        return reply.replies.map((RedisReply reply) {
+          if (reply is StatusReply) {
+            return reply.status;
+          } else if (reply is ErrorReply) {
+            return reply.error;
+          } else if (reply is BulkReply) {
+            return serializer.deserialize(reply.bytes);
+          } else {
+            throw new RedisClientException("The returned reply was not of type BulkReply but ${reply.runtimeType}");
+          }
+        }).toList(growable: false);
+      }
     });
   }
 }

@@ -995,7 +995,15 @@ invalid_line
         await client1.multi();
         client1.set('id', 'other-string');
         await client2.set('id', 'client2-string');
-        expect(await client1.exec(), isNull);
+
+        var throws = false;
+        try {
+          await client1.exec();
+        } on RedisAbortedTransaction {
+          throws = true;
+        }
+        expect(throws, isTrue);
+
         expect(await client1.get('id'), 'client2-string');
         expect(await client2.get('id'), 'client2-string');
       });

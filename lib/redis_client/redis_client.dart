@@ -589,6 +589,8 @@ class RedisClient {
   /**
    * Executes all previously queued commands in a transaction and restores the
    * connection state to normal.
+   *
+   * Throws [RedisAbortedTransaction] if aborting (WATCH lock collision)
    */
   Future<List<Object>> exec() => connection.rawSend([RedisCommand.EXEC]).receiveMultiFlexDeserialized(serializer);
 
@@ -1540,4 +1542,8 @@ class RedisClientException implements Exception {
   RedisClientException(this.message);
 
   String toString() => "RedisClientException: $message";
+}
+
+class RedisAbortedTransaction extends RedisClientException {
+  RedisAbortedTransaction() : super('EXEC aborted transaction');
 }
