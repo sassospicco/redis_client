@@ -22,11 +22,6 @@ class JsonRedisSerializer implements RedisSerializer {
   static final int NINE = 57; // 9
   static final int SIGN = 45; // -
 
-  static final String DATE_PREFIX = "/Date(";
-  static final String DATE_SUFFIX = ")/";
-  static final String TRUE = "true";
-  static final String FALSE = "false";
-
   /**
    * Serializes given object into its' String representation and returns the
    * binary of it.
@@ -42,8 +37,6 @@ class JsonRedisSerializer implements RedisSerializer {
   String serializeToString(Object obj) {
     if (obj == null || obj is String)
       return obj;
-    else if (obj is DateTime)
-      return "$DATE_PREFIX${obj.millisecondsSinceEpoch}$DATE_SUFFIX";
     else if (obj is Set)
       return serializeToString(obj.toList());
     else
@@ -81,13 +74,6 @@ class JsonRedisSerializer implements RedisSerializer {
       e.message;
     }
 
-    if (decodedObject is String) {
-      if (_isDate(decodedObject)) {
-        int timeSinceEpoch =
-            int.parse(decodedObject.substring(DATE_PREFIX.length, decodedObject.length - DATE_SUFFIX.length));
-        return new DateTime.fromMillisecondsSinceEpoch(timeSinceEpoch, isUtc: true);
-      }
-    }
     return decodedObject;
   }
 
@@ -123,8 +109,6 @@ class JsonRedisSerializer implements RedisSerializer {
     }
     return multiBulkMap;
   }
-
-  bool _isDate(decodedString) => decodedString.startsWith(DATE_PREFIX);
 }
 
 class ZSetEntry<Object, num> {

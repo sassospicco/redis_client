@@ -51,13 +51,6 @@ main() {
         expect(deserializedSet, equals(new Set.from(['some-string', 4])));
       });
 
-      test('dates', () {
-        DateTime now = new DateTime.now().toUtc();
-        var serializedDate = serializer.serialize(now);
-        DateTime justNow = serializer.deserialize(serializedDate);
-        expect(now, equals(justNow));
-      });
-
       //TODO: need some work to support instantiation from deserializer
       test('custom classes', () {
         A a = new A('some-value');
