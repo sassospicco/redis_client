@@ -590,7 +590,7 @@ class RedisClient {
    * Executes all previously queued commands in a transaction and restores the
    * connection state to normal.
    */
-  Future<MultiBulkReply> exec() => connection.rawSend([RedisCommand.EXEC]).receiveMultiBulk();
+  Future<List<Object>> exec() => connection.rawSend([RedisCommand.EXEC]).receiveMultiFlexDeserialized(serializer);
 
   /**
    * Flushes all previously queued commands in a transaction and restores the

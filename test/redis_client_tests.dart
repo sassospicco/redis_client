@@ -734,6 +734,10 @@ invalid_line
             .then((blpopResult) => expect(blpopResult, equals({'list1': 'a'}))));
       });
 
+      test('BLPOP - with timeout', () {
+        async(client.blpop(['list1'], timeout: 1).then((blpopResult) => expect(blpopResult, isNull)));
+      });
+
       test('BRPOP', () {
         async(client
             .rpush('list1', ['a', 'b', 'c'])
@@ -954,6 +958,54 @@ invalid_line
                 .then((zUnionStoreResult) => expect(zUnionStoreResult, equals(2))))));
       });
     });
+
+    group('Transaction commands:', () {
+      test('WATCH - single', () {
+        async(client.watch(['id1']).then((watchResult) => expect(watchResult, equals('OK'))));
+      });
+
+      test('WATCH - multiple', () {
+        async(client.watch(['id1', 'id2']).then((watchResult) => expect(watchResult, equals('OK'))));
+      });
+
+      test('UNWATCH', () {
+        async(client.unwatch().then((unwatchResult) => expect(unwatchResult, equals('OK'))));
+      });
+
+      test('MULTI', () {
+        async(client.multi().then((multiResult) => expect(multiResult, equals('OK'))));
+      });
+
+      test('EXEC - ok', () async {
+        await client.set('id', 'some-string');
+        await client.multi();
+        client.get('id');
+        client.set('id', 'other-string');
+        client.get('id');
+        expect(await client.exec(), equals(['some-string', 'OK', 'other-string']));
+        expect(await client.get('id'), equals('other-string'));
+      });
+
+      test('EXEC - ko', () async {
+        var client1 = await RedisClient.connect("127.0.0.1:6379");
+        var client2 = await RedisClient.connect("127.0.0.1:6379");
+
+        await client1.set('id', 'some-string');
+        await client1.watch(['id']);
+        await client1.multi();
+        client1.set('id', 'other-string');
+        await client2.set('id', 'client2-string');
+        expect(await client1.exec(), isNull);
+        expect(await client1.get('id'), 'client2-string');
+        expect(await client2.get('id'), 'client2-string');
+      });
+
+      test('DISCARD', () async {
+        await client.multi();
+        await client.discard();
+      });
+    });
+
     test('SORT', () {
       var alphabeticalList = ['some-string', 'other-string'], numericalList = [4, 5, 2, 5, 1];
 

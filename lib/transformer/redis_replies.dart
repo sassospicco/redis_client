@@ -44,3 +44,4 @@ class MultiBulkReply extends RedisReply {
   MultiBulkReply(this.replies);
   final List<RedisReply> replies;
 }
+

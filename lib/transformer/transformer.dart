@@ -223,7 +223,9 @@ class _MultiBulkConsumer extends _RedisConsumer {
     if (_replies == null) {
       current = _lineConsumer.consume(data, current, end);
       if (_lineConsumer.done) {
-        final numReplies = int.parse(new String.fromCharCodes(_lineConsumer.data));
+        final numRepliesOnWire = int.parse(new String.fromCharCodes(_lineConsumer.data));
+        _isNullArray = numRepliesOnWire == -1;
+        final numReplies = numRepliesOnWire == -1 ? 0 : numRepliesOnWire;
         _replies = new List<RedisReply>(numReplies);
       }
     } else {
@@ -248,7 +250,7 @@ class _MultiBulkConsumer extends _RedisConsumer {
     return current;
   }
 
-  RedisReply makeReply() => new MultiBulkReply(_replies);
+  RedisReply makeReply() => _isNullArray ? null : new MultiBulkReply(_replies);
 
   /// Consumer is done when all replies have been received
   bool get done => _replies != null && _replies.length == _repliesReceived;
@@ -261,6 +263,8 @@ class _MultiBulkConsumer extends _RedisConsumer {
 
   /// List of resulting replies in this MultiBulkReply
   List<RedisReply> _replies;
+
+  bool _isNullArray = false;
 
   int _repliesReceived = 0;
 }

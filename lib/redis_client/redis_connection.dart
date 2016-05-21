@@ -355,6 +355,7 @@ class Receiver {
    */
   Future<int> receiveInteger() {
     return _received.then((reply) {
+      if (reply is StatusReply && reply.status == 'QUEUED') return null;
       if (reply is! IntegerReply) {
         var error = "";
         if (reply is ErrorReply) {
@@ -379,6 +380,7 @@ class Receiver {
    */
   Future<String> receiveError() {
     return _received.then((reply) {
+      if (reply is StatusReply && reply.status == 'QUEUED') return null;
       if (reply is! ErrorReply) {
         throw new RedisClientException("The returned reply was not of type ErrorReply but ${reply.runtimeType}");
       }
@@ -391,7 +393,10 @@ class Receiver {
    * if `1` and `false` otherwise.
    */
   Future<bool> receiveBool() {
-    return receiveInteger().then((int value) => value == 1 ? true : false);
+    return receiveInteger().then((int value) {
+      if (reply == null) return null;
+      return value == 1 ? true : false;
+    });
   }
 
   /**
@@ -399,6 +404,7 @@ class Receiver {
    */
   Future<String> receiveStatus([String expectedStatus]) {
     return _received.then((reply) {
+      if (reply is StatusReply && reply.status == 'QUEUED') return null;
       if (reply is! StatusReply) {
         var error = "";
         if (reply is ErrorReply) {
@@ -420,6 +426,7 @@ class Receiver {
    */
   Future<List<int>> receiveBulkData() {
     return _received.then((reply) {
+      if (reply is StatusReply && reply.status == 'QUEUED') return null;
       if (reply is! BulkReply) {
         var error = "";
         if (reply is ErrorReply) {
@@ -437,6 +444,7 @@ class Receiver {
    */
   Future<String> receiveBulkString() {
     return _received.then((reply) {
+      if (reply is StatusReply && reply.status == 'QUEUED') return null;
       if (reply is! BulkReply) {
         var error = "";
         if (reply is ErrorReply) {
@@ -453,7 +461,10 @@ class Receiver {
    * Returns the data received by this bulk reply deserialized.
    */
   Future<Object> receiveBulkDeserialized(RedisSerializer serializer) {
-    return receiveBulkData().then(serializer.deserialize);
+    return receiveBulkData().then((List<int> reply) {
+      if (reply == null) return null;
+      return serializer.deserialize(reply);
+    });
   }
 
   /**
@@ -461,6 +472,7 @@ class Receiver {
    */
   Future<MultiBulkReply> receiveMultiBulk() {
     return _received.then((reply) {
+      if (reply == null || (reply is StatusReply && reply.status == 'QUEUED')) return null;
       if (reply is! MultiBulkReply) {
         var error = "";
         if (reply is ErrorReply) {
@@ -479,6 +491,7 @@ class Receiver {
    */
   Future<List<String>> receiveMultiBulkStrings() {
     return receiveMultiBulk().then((MultiBulkReply reply) {
+      if (reply == null) return null;
       return reply.replies.map((BulkReply reply) => reply.string).toList(growable: false);
     });
   }
@@ -489,6 +502,7 @@ class Receiver {
    */
   Future<List<Object>> receiveMultiBulkDeserialized(RedisSerializer serializer) {
     return receiveMultiBulk().then((MultiBulkReply reply) {
+      if (reply == null) return null;
       return reply.replies.map((BulkReply reply) => serializer.deserialize(reply.bytes)).toList(growable: false);
     });
   }
@@ -499,6 +513,7 @@ class Receiver {
    */
   Future<Set<Object>> receiveMultiBulkSetDeserialized(RedisSerializer serializer) {
     return receiveMultiBulk().then((MultiBulkReply reply) {
+      if (reply == null) return null;
       return reply.replies.map((BulkReply reply) => serializer.deserialize(reply.bytes)).toSet();
     });
   }
@@ -509,31 +524,32 @@ class Receiver {
    */
   Future<Map<String, Object>> receiveMultiBulkMapDeserialized(RedisSerializer serializer) {
     return receiveMultiBulk().then((MultiBulkReply reply) {
+      if (reply == null) return null;
       return serializer.deserializeToMap(reply.replies);
     });
   }
 
   /**
-   * Checks that the received reply is either [ErrorReply], [StatusReply] or
-   * [BulkReply] and returns the [String] of it.
+   * A flexible method to receive when calling EXEC. EXEC may return a null reply
+   * or an Array reply, which is almost a [MultiBulkReply], but not quite.
    */
-  // I think this function should not be implemented.
-  // Getting an error instead of an expected string should not be default behavior.
-//  Future<String> receiveString() {
-//    return _received.then((reply) {
-//      if (reply is ErrorReply) {
-//        return reply.error;
-//      }
-//      else if (reply is StatusReply) {
-//        return reply.status;
-//      }
-//      else if (reply is BulkReply) {
-//        return reply.string;
-//      }
-//      else {
-//        throw new RedisClientException("Couldn't get a string of type ${reply.runtimeType}.");
-//      }
-//    });
-//  }
-
+  Future<List<Object>> receiveMultiFlexDeserialized(RedisSerializer serializer) {
+    return receiveMultiBulk().then((MultiBulkReply reply) {
+      return reply.replies.map((RedisReply reply) {
+        if (reply is StatusReply) {
+          return reply.status;
+        } else if (reply is ErrorReply) {
+          return reply.error;
+        } else if (reply is BulkReply) {
+          if (reply.string == null) {
+            return null;
+          } else {
+            return serializer.deserialize(reply.bytes);
+          }
+        } else {
+          throw new RedisClientException("The returned reply was not of type BulkReply but ${reply.runtimeType}");
+        }
+      }).toList(growable: false);
+    });
+  }
 }
