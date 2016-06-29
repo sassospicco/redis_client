@@ -1,5 +1,5 @@
 name: redis_client
-version: 0.1.16+transactions
+version: 0.1.17
 authors:
 - Demis Bellot <demis.bellot@gmail.com>
 - Adam Singer <financeCoding@gmail.com>
@@ -7,8 +7,10 @@ authors:
 - Baruch Berger <baruchberger@gmail.com>
 - Max Horstmann <max.horstmann@gmail.com>
 - Matthew Butler <butler.matthew@gmail.com>
-description: A high-performance async/non-blocking Redis client for Dart.
-homepage: https://github.com/dartist/redis_client
+- Stefano Tribioli <tribioli.stefano@gmail.com>
+description: >
+  A high-performance async/non-blocking Redis client for Dart. This is a fork by Stefano Tribioli.
+homepage: https://github.com/sassospicco/redis_client
 environment:
   sdk: '>=0.8.10+6 <2.0.0'
 dependencies:
