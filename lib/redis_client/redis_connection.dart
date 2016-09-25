@@ -545,8 +545,10 @@ class Receiver {
             return reply.error;
           } else if (reply is BulkReply) {
             return serializer.deserialize(reply.bytes);
+          } else if (reply is IntegerReply) {
+            return reply.integer;
           } else {
-            throw new RedisClientException("The returned reply was not of type BulkReply but ${reply.runtimeType}");
+            throw new RedisClientException("The returned reply was of type ${reply.runtimeType}, which is currently unsupported");
           }
         }).toList(growable: false);
       }

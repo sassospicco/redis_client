@@ -986,6 +986,16 @@ invalid_line
         expect(await client.get('id'), equals('other-string'));
       });
 
+      test('EXEC - various replies', () async {
+        await client.multi();
+        client.set('id', 'some-string');
+        client.get('id');
+        client.lindex('list', 0);
+        client.lpush('list', 'first-element');
+        client.lpop('list');
+        expect(await client.exec(), equals(['OK', 'some-string', null, 1, 'first-element']));
+      });
+
       test('EXEC - ko', () async {
         var client1 = await RedisClient.connect("127.0.0.1:6379");
         var client2 = await RedisClient.connect("127.0.0.1:6379");
